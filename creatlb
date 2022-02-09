@@ -1,0 +1,27 @@
+pipeline{
+agent any 
+stages{
+stage('creat asg'){
+steps{
+sh"ls"
+script{
+ def cmd="aws elbv2 creat-load-balancer --name my-load-balancer --subnets subnet-08ac816e92386a609 subnet-08ac816e92386a609 --security-group sg-0dc41efd97089dff7 --region us-east-2"
+ def output=sh(script:cmd,returnStdout:true)
+ jsonitem1=readJSON text:output
+ println(jsonitem1)
+ sleep(60)
+ }
+ script{
+ def cmd="aws elbv2 creat-target-group --name-my-target --protocol HTTP --port 80 --target-type instance --vpc-id vpc-01bd5d3657235916f --region us-east-2"
+ def output=sh(script:cmd,returnStdout:true)
+ jsonitem2=readJSON text:output
+ println(jsonitem2)
+ sleep(180)
+ }
+ sh "aws elbv2 creat-listener --load-balancer-arn ${jsonitem1['LoadBalancers'][0]['LoadBalancerArn']} --protocol HTTP --port 80 --default-actions Type=forward,TargetGroupArn=$['TargetGroupArn']} --region us east-2"
+ sh"aws autoscaling creat-lanch-configuration --launch-configuration-name my-launchconfig -cli --image-id ami-0629230e074c580f2 --instance-type t2.micro --security-groups sg-0dc41efd97089dff7 --key-name saiprasad --iam-instance-profile sairole --user-data file://userdata.txt --region us-east-2"
+ sh"aws autoscalling creat-auto-scaling-group --group-name my-asg33-cli --launch-configuration-name my-launchconfig -cli --max-size 2 --min-size 1 --desired-capacity 1 --target-group-arns ${jsonitem2['TargetGroups'][0] ['TargetGroupArn']} --availability-zones us-east-2c --region us-east-2"
+ }
+ }
+ }
+ }
